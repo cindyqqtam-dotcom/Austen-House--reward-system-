@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Student Reward Passes - FIXED</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#8B0000">
+  
+  <!-- QR Libraries -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+  
+  <style>
+    :root {
+      --primary: #FF3B30;
+      --primary-dark: #8B0000;
+      --bg: #2B0000;
+      --card-bg: #3B0000;
+      --text-main: #FFFFFF;
+      --text-muted: #FCA5A5;
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      overflow-x: hidden;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text-main);
+      padding-bottom: 20px;
+    }
+
+    header {
+      background: var(--primary-dark);
+      color: #fff;
+      padding: 15px 20px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.4);
+    }
+
+    header h1 { margin: 0; font-size: 20px; font-weight: 600; }
+    header small { display: block; font-size: 12px; opacity: 0.9; margin-top: 2px; }
+
+    nav {
+      display: flex;
+      background: #4A0000;
+      position: sticky;
+      top: 80px;
+      z-index: 100;
+    }
+
+    nav button {
+      flex: 1;
+      padding: 15px 10px;
+      border: none;
+      background: transparent;
+      color: #FECACA;
+      cursor: pointer;
+      font-size: 16px;
+      font-weight: 500;
+      transition: all 0.2s ease;
+      min-height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    nav button.active {
+      background: var(--primary);
+      color: #fff;
+    }
+
+    main { padding: 20px; padding-top: 30px; max-width: 500px; margin: 0 auto; }
+
+    .section { display: none; }
+    .section.active { display: block; }
+
+    .card {
+      background: var(--card-bg);
+      padding: 25px;
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+      margin-bottom: 20px;
+      border: 1px solid #7F1D1D;
+    }
+
+    h2 { margin: 0 0 20px 0; font-size: 22px; color: #F87171; font-weight: 600; }
+
+    label {
+      display: block;
+      margin: 15px 0 8px 0;
+      font-size: 14px;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    input {
+      width: 100%;
+      padding: 15px;
+      border-radius: 8px;
+      border: 2px solid #FCA5A5;
+      font-size: 16px;
+      background: #1F0000;
+      color: #fff;
+      -webkit-appearance: none;
+    }
+
+    input::placeholder { color: #FCA5A5; opacity: 0.8; }
+
+    button.primary {
+      background: var(--primary);
+      color: #fff;
+      border: none;
+      padding: 15px 20px;
+      border-radius: 8px;
+      cursor: pointer;
+      margin-top: 10px;
+      font-size: 16px;
+      font-weight: 600;
+      width: 100%;
+      transition: all 0.2s ease;
+      min-height: 50px;
+    }
+
+    button.primary:hover, button.primary:active {
+      background: #FF1A1A;
+      transform: translateY(-2px);
+    }
+
+    button.primary:disabled {
+      background: #666;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .small-text {
+      font-size: 14px;
+      color: var(--text-muted);
+      margin-top: 12px;
+      line-height: 1.4;
+    }
+
+    .qr-box {
+      margin: 20px 0;
+      text-align: center;
+      padding: 20px;
+      background: #1F0000;
+      border-radius: 12px;
+      border: 2px solid #7F1D1D;
+    }
+
+    .qr-box canvas {
+      border-radius: 8px;
+      max-width: 100%;
+      height: auto;
+    }
+
+    ul.pass-list {
+      list-style: none;
+      padding: 0;
+      margin: 15px 0 0 0;
+    }
+
+    ul.pass-list li {
+      padding: 15px;
+      border-radius: 8px;
+      margin-bottom: 10px;
+      background: #4A0000;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 16px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    ul.pass-list li:hover { background: #5A0000; }
+
+    ul.pass-list li span.name { flex: 1; }
+    ul.pass-list li span.used {
+      color: #FCA5A5;
+      font-size: 13px;
+      font-weight: 600;
+      padding: 4px 10px;
+      border-radius: 20px;
+      background: rgba(252,165,165,0.2);
+    }
+
+    #reader {
+      width: 100%;
+      max-width: 350px;
+      height: 250px;
+      margin: 20px auto;
+      border-radius: 12px;
+      background: #000;
+      overflow: hidden;
+    }
+
+    #video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    @media (max-width: 480px) {
+      main { padding: 15px; }
+      .card { padding: 20px; }
+      nav button { font-size: 14px; padding: 12px 5px; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>🔴 Reward Pass System</h1>
+    <small>Teacher • Host (Password: reward2026) • Student</small>
+  </header>
+
+  <nav>
+    <button data-section="teacher" class="active">👨‍🏫 Teacher</button>
+    <button data-section="host-login">🔐 Host</button>
+    <button data-section="student">👨‍🎓 Student</button>
+  </nav>
+
+  <main>
+    <!-- TEACHER - FIXED CAMERA -->
+    <section id="teacher" class="section active">
+      <div class="card">
+        <h2>👨‍🏫 Teacher Scanner</h2>
+        <p class="small-text">Tap button below, allow camera, point at QR code</p>
+        
+        <button class="primary" id="start-camera-btn">📷 Start Camera</button>
+        
+        <div id="reader" style="display: none;"></div>
+        <div class="small-text" id="teacher-scan-status">Tap "Start Camera" first</div>
+      </div>
+    </section>
+
+    <!-- HOST LOGIN -->
+    <section id="host-login" class="section">
+      <div class="card">
+        <h2>🔐 Host Login</h2>
+        <label>Password</label>
+        <input id="host-password-input" type="password" placeholder="reward2026" />
+        <button class="primary" id="host-login-btn">Enter Host Panel</button>
+        <div class="small-text" id="host-login-message"></div>
+      </div>
+    </section>
+
+    <!-- HOST MAIN -->
+    <section id="host" class="section">
+      <div class="card">
+        <h2>👑 Host Panel</h2>
+        <label>Student Name</label>
+        <input id="host-student-name" placeholder="e.g. Alex Chen" />
+        <label>Reward Name</label>
+        <input id="host-pass-name" placeholder="e.g. Extra Break Time" />
+        <button class="primary" id="host-give-pass-btn">✅ Create Pass + QR</button>
+        <div id="host-last-qr" class="qr-box"></div>
+        <div class="small-text" id="host-last-message"></div>
+      </div>
+    </section>
+
+    <!-- STUDENT -->
+    <section id="student" class="section">
+      <div class="card">
+        <h2>👨‍🎓 My Passes</h2>
+        <label>Your Exact Name</label>
+        <input id="student-name-input" placeholder="Type EXACTLY as Host entered" />
+        <button class="primary" id="student-load-passes-btn">📱 Show My Passes</button>
+        <div class="small-text">Tap ACTIVE passes to show QR code for teacher</div>
+        <div id="student-passes-list"></div>
+        <div id="student-pass-qr" class="qr-box"></div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    // CONFIG
+    const HOST_PASSWORD = "reward2026";
+
+    // Database
+    const db = { students: [] };
+    function loadDb() {
+      try {
+        const data = localStorage.getItem('rewardDb');
+        if (data) Object.assign(db, JSON.parse(data));
+      } catch(e) {}
+    }
+    function saveDb() {
+      localStorage.setItem('rewardDb', JSON.stringify(db));
+    }
+
+    function createPass(studentName, passName) {
+      let student = db.students.find(s => s.name.toLowerCase() === studentName.toLowerCase());
+      if (!student) {
+        student = { id: 's'+Date.now(), name: studentName, passes: [] };
+        db.students.push(student);
+      }
+      const passId = 'p'+Date.now()+Math.random().toString(36).slice(2,7);
+      const pass = { id: passId, name: passName, used: false };
+      student.passes.push(pass);
+      saveDb();
+      return { student, pass };
+    }
+
+    function markPassUsed(passId) {
+      for (let s of db.students) {
+        let p = s.passes.find(x => x.id === passId);
+        if (p) {
+          p.used = true;
+          saveDb();
+          return { student: s, pass: p };
+        }
+      }
+      return null;
+    }
+
+    function getStudentPasses(name) {
+      let s = db.students.find(s => s.name.toLowerCase() === name.toLowerCase());
+      return s ? s.passes : [];
+    }
+
+    loadDb();
+
+    // MAIN LOGIC
+    document.addEventListener('DOMContentLoaded', () => {
+      // Tab switching
+      document.querySelectorAll('nav button').forEach(btn => {
+        btn.onclick = () => {
+          document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+          document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+          btn.classList.add('active');
+          let target = document.getElementById(btn.dataset.section);
+          if (target) target.classList.add('active');
+        };
+      });
+
+      // HOST LOGIN
+      document.getElementById('host-login-btn').onclick = () => {
+        let pwd = document.getElementById('host-password-input').value;
+        let msg = document.getElementById('host-login-message');
+        if (pwd === HOST_PASSWORD) {
+          msg.textContent = '✅ Access granted';
+          document.querySelector('button[data-section="host-login"]').click();
+          document.getElementById('host').classList.add('active');
+        } else {
+          msg.textContent = '❌ Wrong password';
+          document.getElementById('host-password-input').value = '';
+        }
+      };
+
+      // HOST CREATE PASS
+      document.getElementById('host-give-pass-btn').onclick = () => {
+        let student = document.getElementById('host-student-name').value.trim();
+        let passName = document.getElementById('host-pass-name').value.trim();
+        let qrDiv = document.getElementById('host-last-qr');
+        let msg = document.getElementById('host-last-message');
+        
+        if (!student || !passName) {
+          msg.textContent = 'Enter both fields';
+          return;
+        }
+        
+        let { pass } = createPass(student, passName);
+        qrDiv.innerHTML = '';
+        new QRCode(qrDiv, { text: pass.id, width: 220, height: 220 });
+        msg.textContent = `✅ "${passName}" created for ${student}`;
+        document.getElementById('host-student-name').value = '';
+        document.getElementById('host-pass-name').value = '';
+      };
+
+      // STUDENT PASSES
+      document.getElementById('student-load-passes-btn').onclick = () => {
+        let name = document.getElementById('student-name-input').value.trim();
+        let listDiv = document.getElementById('student-passes-list');
+        let qrDiv = document.getElementById('student-pass-qr');
+        
+        listDiv.innerHTML = '';
+        qrDiv.innerHTML = '';
+        
+        if (!name) {
+          listDiv.innerHTML = '<div class="small-text">Enter your name</div>';
+          return;
+        }
+        
+        let passes = getStudentPasses(name);
+        if (!passes.length) {
+          listDiv.innerHTML = '<div class="small-text">No passes found</div>';
+          return;
+        }
+        
+        let ul = document.createElement('ul');
+        ul.className = 'pass-list';
+        passes.forEach(p => {
+          let li = document.createElement('li');
+          let nameSpan = document.createElement('span');
+          nameSpan.className = 'name';
+          nameSpan.textContent = p.name;
+          
+          if (!p.used) {
+            nameSpan.style.textDecoration = 'underline';
+            nameSpan.onclick = () => {
+              qrDiv.innerHTML = '';
+              new QRCode(qrDiv, { text: p.id, width: 220, height: 220 });
+            };
+          } else {
+            nameSpan.style.opacity = '0.5';
+          }
+          
+          let status = document.createElement('span');
+          status.className = 'used';
+          status.textContent = p.used ? 'USED' : 'ACTIVE';
+          
+          li.append(nameSpan, status);
+          ul.appendChild(li);
+        });
+        listDiv.appendChild(ul);
+      };
+
+      // TEACHER SCANNER - FIXED VERSION
+      let scanInterval = null;
+      const teacherStatus = document.getElementById('teacher-scan-status');
+      const startCameraBtn = document.getElementById('start-camera-btn');
+      const readerDiv = document.getElementById('reader');
+
+      startCameraBtn.onclick = async () => {
+        try {
+          startCameraBtn.textContent = 'Starting...';
+          startCameraBtn.disabled = true;
+          
+          // Request camera (back camera on phones)
+          const stream = await navigator.mediaDevices.getUserMedia({ 
+            video: { facingMode: 'environment' }
+          });
+          
+          // Show video
+          readerDiv.innerHTML = `
+            <video id="video" autoplay playsinline muted style="
+              width: 100%; 
+              max-width: 350px; 
+              height: 250px; 
+              border-radius: 12px;
+              background: #000;
+              display: block;
+              margin: 0 auto;
+            "></video>
+            <canvas id="canvas" style="display: none;"></canvas>
+          `;
+          
+          const video = document.getElementById('video');
+          video.srcObject = stream;
+          
+          // Wait for video to load
+          video.onloadedmetadata = () => {
+            readerDiv.style.display = 'block';
+            teacherStatus.textContent = '✅ Camera ready! Point at QR code...';
+            startCameraBtn.textContent = '📷 Stop & Restart';
+            startCameraBtn.disabled = false;
+            
+            // Start QR scanning
+            if (scanInterval) clearInterval(scanInterval);
+            scanInterval = setInterval(() => {
+              if (video.readyState === video.HAVE_ENOUGH_DATA) {
+                const canvas = document.getElementById('canvas');
+                const ctx = canvas.getContext('2d');
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                ctx.drawImage(video, 0, 0);
+                
+                const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                const code = jsQR(imageData.data, imageData.width, imageData.height);
+                
+                if (code) {
+                  const result = markPassUsed(code.data);
+                  teacherStatus.textContent = result 
+                    ? `✅ "${result.pass.name}" for ${result.student.name} - MARKED USED`
+                    : '❌ Invalid or already used pass';
+                  
+                  // Stop scanning after success
+                  clearInterval(scanInterval);
+                  startCameraBtn.textContent = '📷 Scan Another';
+                }
+              }
+            }, 300);
+          };
+          
+        } catch (err) {
+          teacherStatus.textContent = '❌ Camera access denied. Check permissions.';
+          startCameraBtn.textContent = '📷 Try Again';
+          startCameraBtn.disabled = false;
+          console.error('Camera error:', err);
+        }
+      };
+    });
+  </script>
+</body>
+</html>
